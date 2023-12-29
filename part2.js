@@ -1,4 +1,4 @@
-var readline = require("readline-sync");
+import readline from "readline-sync";
 
 const variableNum = {
   A: 1,
@@ -21,7 +21,7 @@ const findKeyByValue = (obj, target) => {
   }
 };
 
-const makeGrid = (number) => {
+  export const makeGrid = (number) => {
   const grid = [];
   let num = 0;
   let num2 = 1;
@@ -38,7 +38,7 @@ const makeGrid = (number) => {
   return grid;
 };
 
-function display(board) {
+  export function display(board) {
   for (let i = 0; i < board.length; i++) {
     let rowString = "";
     for (let j = 0; j < board[i].length; j++) {
@@ -52,37 +52,61 @@ function display(board) {
   console.log("_______________________________");
 }
 
-function getRandomPosition(gridSize,shipLength){
-  const orientation = Math.random() < 0.5 ? 'horizontal': 'vertical';
-  let row,col;
-  if(orientation == 'horizontal'){
-    row = Math.floor(Math.random() * gridSize);
-    col = Math.floor(Math.random() * (gridSize-shipLength+1));
+function getRandomPosition(grid, gridSize, shipLength) {
+  const orientation = Math.random() < 0.5 ? 'horizontal' : 'vertical';
+  let row, col;
+
+  if (orientation == 'horizontal') {
+    do {
+      row = Math.floor(Math.random() * gridSize);
+      col = Math.floor(Math.random() * (gridSize - shipLength + 1));
+    } while (shipOccupied(grid, row, col, shipLength, orientation));
+  } else {
+    do {
+      row = Math.floor(Math.random() * (gridSize - shipLength + 1));
+      col = Math.floor(Math.random() * gridSize);
+    } while (shipOccupied(grid, row, col, shipLength, orientation));
   }
-  else{
-    row = Math.floor(Math.random() * (gridSize-shipLength+1));
-    col = Math.floor(Math.random() * gridSize);
-  }
-  return {row,col,orientation};
+
+  return { row, col, orientation };
 }
 
-function placeShip(grid,shipLength){
-  const position = getRandomPosition(grid.length,shipLength);
-  const {row,col,orientation} = position;
-  for(let i =0; i<shipLength;i++){
-    if(orientation=='horizontal'){
-      grid[row][col+i] = 'Ship';
-    }
-    else{
-      grid[row+i][col] = 'Ship';
+
+function shipOccupied(grid, row, col, shipLength, orientation) {
+  for (let i = 0; i < shipLength; i++) {
+    if (orientation == 'horizontal' && grid[row][col + i] === 'Ship') {//keep the row and change col to check if there is already a ship like A1 A2 A3 A4
+      return true;
+    } else if (orientation == 'vertical' && grid[row + i][col] === 'Ship') {
+      return true;
     }
   }
+  return false;
 }
+
+
+function placeShip(grid, shipLength) {
+  const position = getRandomPosition(grid,grid.length, shipLength);
+  const { row, col, orientation } = position;
+
+  let shipPositions = [];
+  for (let i = 0; i < shipLength; i++) {
+    if (orientation == 'horizontal') {
+      grid[row][col + i] = 'Ship';
+      shipPositions.push(`${findKeyByValue(variableNum, row + 1)}${col + i + 1}`);
+    } else {
+      grid[row + i][col] = 'Ship';
+      shipPositions.push(`${findKeyByValue(variableNum, row + i + 1)}${col + 1}`);
+    }
+  }
+
+  console.log(`Placing ship of length ${shipLength} at positions: ${shipPositions.join('-')}`);
+}
+
 
 let playAgain = true;
 
 while (playAgain) {
-  readline.question("Press any key to start!");
+  readline.keyInPause("Press any key to start!");
 
   const ships = [2,3,3,4,5];
   const grid10 = makeGrid(10);
@@ -91,14 +115,15 @@ while (playAgain) {
     placeShip(grid10,shipLength);
   });
   let remainingShipsParts = ships.reduce((sum,length)=>sum+length,0);
+  let location = [];
   while (remainingShipsParts > 0) {
     display(grid10);
-    let location = [];
+    
     let target = readline.question("Enter a location to Strike ie 'A2'");
 
     if (!location.includes(target)) {
       location.push(target);
-      let gridValue = grid10[variableNum[target[0].toUpperCase()] - 1][target[1] - 1];
+      let gridValue = grid10[variableNum[target[0].toUpperCase()] - 1][parseInt(target.slice(1)) - 1];
       if (gridValue === "Ship") {
         remainingShipsParts--;
         console.log(`Hit. You have sunk a battleship. ${remainingShipsParts} ship parts remaining.`);
